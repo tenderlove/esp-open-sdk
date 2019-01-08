@@ -1,0 +1,13 @@
+--- crosstool-NG/kconfig/Makefile.orig	2019-01-08 09:52:04.000000000 -0800
++++ crosstool-NG/kconfig/Makefile	2019-01-08 09:52:22.000000000 -0800
+@@ -48,8 +48,8 @@
+ nconf_SRC = nconf.c nconf.gui.c
+ nconf_OBJ = $(patsubst %.c,%.o,$(nconf_SRC))
+ nconf_DEP = $(patsubst %.c,%.dep,$(nconf_SRC))
+-$(nconf_OBJ) $(nconf_DEP): CFLAGS += $(INTL_CFLAGS) -I/usr/include/ncurses
+-nconf: LDFLAGS += -lmenu -lpanel $(LIBS)
++$(nconf_OBJ) $(nconf_DEP): CFLAGS += $(INTL_CFLAGS) -I/usr/local/Cellar/ncurses/6.1/include
++nconf: LDFLAGS += -lmenu -lpanel $(LIBS) -L/usr/local/Cellar/ncurses/6.1/lib
+ 
+ # These are generated files:
+ ALL_OBJS = $(sort $(COMMON_OBJ) $(LX_OBJ) $(conf_OBJ) $(mconf_OBJ) $(nconf_OBJ))

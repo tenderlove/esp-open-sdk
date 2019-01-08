@@ -56,19 +56,34 @@ $ sudo apt-get install libtool-bin
 ```
 
 ## MacOS:
-```bash
-$ brew tap homebrew/dupes
-$ brew install binutils coreutils automake wget gawk libtool help2man gperf gnu-sed --with-default-names grep
-$ export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
-```
 
 In addition to the development tools MacOS needs a case-sensitive filesystem.
 You might need to create a virtual disk and build esp-open-sdk on it:
 ```bash
-$ sudo hdiutil create ~/Documents/case-sensitive.dmg -volname "case-sensitive" -size 10g -fs "Case-sensitive HFS+"
-$ sudo hdiutil mount ~/Documents/case-sensitive.dmg
-$ cd /Volumes/case-sensitive
+$ sudo hdiutil create ~/Documents/esp8266.dmg -volname "case-sensitive" -size 10g -fs "Case-sensitive HFS+"
+$ sudo hdiutil mount ~/Documents/esp8266.dmg
+$ cd /Volumes/esp8266
 ```
+
+This case also be done via the Disk Utility.app GUI app if you prefer.
+
+Note: crosstool-NG claims to no longer support macOS.  As of Jan 2019, this is
+more due to non-portable paths to GNU specific utilities, instead of abstracted
+paths and standard POSIX switches. These patches help point macOS to the GNU
+version installed by homebrew (http://brew.sh)
+
+```
+	<< install homebrew / http://brew.sh >>
+	<< create case-sensetive hfs+ disk image and mount as /Volumes/esp8266 >>
+	cd /Volumes/esp8266
+	git clone --recursive https://github.com/daviddpd/esp-open-sdk.git
+	cd esp-open-sdk
+	make clean
+	./esp-open-sdk-mac-bsd.sh
+```
+
+Note 2 : If REBUILDING after failure, always `make clean`.  
+You may need to `rm -rf crosstool-NG/`  then `git submodule update --init --recursive` 
 
 Building
 ========
@@ -76,7 +91,7 @@ Building
 Be sure to clone recursively:
 
 ```
-$ git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
+$ git clone --recursive https://github.com/daviddpd/esp-open-sdk.git
 ```
 
 The project can be built in two modes:

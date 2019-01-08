@@ -10,20 +10,35 @@ TOOLCHAIN = $(TOP)/xtensa-lx106-elf
 
 # Vendor SDK version to install, see VENDOR_SDK_ZIP_* vars below
 # for supported versions.
-VENDOR_SDK = 2.1.0-18-g61248df
+VENDOR_SDK = 2.2.1
 
 .PHONY: crosstool-NG toolchain libhal libcirom sdk
 
 
 
 TOP = $(PWD)
+ifeq ($(FREEBSD),1)
+SHELL = /usr/local/bin/bash
+else
 SHELL = /bin/bash
+endif
 PATCH = patch -b -N
 UNZIP = unzip -q -o
+ifeq ($(MACOS),1)
+SED = /usr/local/bin/sed
+else
+SED = sed
+endif
+
 VENDOR_SDK_ZIP = $(VENDOR_SDK_ZIP_$(VENDOR_SDK))
 VENDOR_SDK_DIR = $(VENDOR_SDK_DIR_$(VENDOR_SDK))
 
+
 VENDOR_SDK_DIR_2.1.0-18-g61248df = ESP8266_NONOS_SDK-2.1.0-18-g61248df
+
+VENDOR_SDK_ZIP_2.2.1 = ESP8266_NONOS_SDK-2.2.1.zip
+VENDOR_SDK_DIR_2.2.1 = ESP8266_NONOS_SDK-2.2.1
+
 VENDOR_SDK_ZIP_2.1.0 = ESP8266_NONOS_SDK-2.1.0.zip
 VENDOR_SDK_DIR_2.1.0 = ESP8266_NONOS_SDK-2.1.0
 VENDOR_SDK_ZIP_2.0.0 = ESP8266_NONOS_SDK_V2.0.0_16_08_10.zip
@@ -98,8 +113,8 @@ ifeq ($(STANDALONE),y)
 	@echo "Installing vendor SDK libs into toolchain sysroot"
 	@cp -Rf sdk/lib/* $(TOOLCHAIN)/xtensa-lx106-elf/sysroot/usr/lib/
 	@echo "Installing vendor SDK linker scripts into toolchain sysroot"
-	@sed -e 's/\r//' sdk/ld/eagle.app.v6.ld | sed -e s@../ld/@@ >$(TOOLCHAIN)/xtensa-lx106-elf/sysroot/usr/lib/eagle.app.v6.ld
-	@sed -e 's/\r//' sdk/ld/eagle.rom.addr.v6.ld >$(TOOLCHAIN)/xtensa-lx106-elf/sysroot/usr/lib/eagle.rom.addr.v6.ld
+	@${SED} -e 's/\r//' sdk/ld/eagle.app.v6.ld | sed -e s@../ld/@@ >$(TOOLCHAIN)/xtensa-lx106-elf/sysroot/usr/lib/eagle.app.v6.ld
+	@${SED} -e 's/\r//' sdk/ld/eagle.rom.addr.v6.ld >$(TOOLCHAIN)/xtensa-lx106-elf/sysroot/usr/lib/eagle.rom.addr.v6.ld
 endif
 
 clean: clean-sdk
@@ -133,8 +148,8 @@ crosstool-NG/.built: crosstool-NG/ct-ng
 
 _toolchain:
 	./ct-ng xtensa-lx106-elf
-	sed -r -i.org s%CT_PREFIX_DIR=.*%CT_PREFIX_DIR="$(TOOLCHAIN)"% .config
-	sed -r -i s%CT_INSTALL_DIR_RO=y%"#"CT_INSTALL_DIR_RO=y% .config
+	${SED} -r -i.org s%CT_PREFIX_DIR=.*%CT_PREFIX_DIR="$(TOOLCHAIN)"% .config
+	${SED} -r -i s%CT_INSTALL_DIR_RO=y%"#"CT_INSTALL_DIR_RO=y% .config
 	cat ../crosstool-config-overrides >> .config
 	./ct-ng build
 
@@ -142,6 +157,9 @@ _toolchain:
 crosstool-NG: crosstool-NG/ct-ng
 
 crosstool-NG/ct-ng: crosstool-NG/bootstrap
+ifeq ($(MACOS),1)
+	$(PATCH) --verbose -d ./crosstool-NG/kconfig -p2  -b -N < crosstool-ng-kconfig-Makefile.patch
+endif
 	$(MAKE) -C crosstool-NG -f ../Makefile _ct-ng
 
 _ct-ng:
@@ -205,6 +223,13 @@ $(VENDOR_SDK_DIR_1.5.4)/.dir: $(VENDOR_SDK_ZIP_1.5.4)
 	touch $@
 
 sdk_patch: $(VENDOR_SDK_DIR)/.dir .sdk_patch_$(VENDOR_SDK)
+
+.sdk_patch_2.2.1: user_rf_cal_sector_set.o
+	echo -e "#undef ESP_SDK_VERSION\n#define ESP_SDK_VERSION 020201" >>$(VENDOR_SDK_DIR)/include/esp_sdk_ver.h
+	$(PATCH) -d $(VENDOR_SDK_DIR) -p1 < c_types-c99_sdk_2.patch
+	cd $(VENDOR_SDK_DIR)/lib; mkdir -p tmp; cd tmp; $(TOOLCHAIN)/bin/xtensa-lx106-elf-ar x ../libcrypto.a; cd ..; $(TOOLCHAIN)/bin/xtensa-lx106-elf-ar rs libwpa.a tmp/*.o
+	$(TOOLCHAIN)/bin/xtensa-lx106-elf-ar r $(VENDOR_SDK_DIR)/lib/libmain.a user_rf_cal_sector_set.o
+	@touch $@
 
 .sdk_patch_2.1.0-18-g61248df .sdk_patch_2.1.0: user_rf_cal_sector_set.o
 	echo -e "#undef ESP_SDK_VERSION\n#define ESP_SDK_VERSION 020100" >>$(VENDOR_SDK_DIR)/include/esp_sdk_ver.h
@@ -367,6 +392,8 @@ ifeq ($(STANDALONE),y)
 endif
 
 
+ESP8266_NONOS_SDK-2.2.1.zip:
+	echo @?
 ESP8266_NONOS_SDK-2.1.0.zip:
 	wget --content-disposition "https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.1.0.zip"
 # The only change wrt to ESP8266_NONOS_SDK_V2.0.0_16_07_19.zip is licensing blurb in source/
