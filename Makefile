@@ -393,6 +393,7 @@ endif
 
 
 ESP8266_NONOS_SDK-2.2.1.zip:
+	wget --content-disposition "https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.2.1.zip"
 	echo @?
 ESP8266_NONOS_SDK-2.1.0.zip:
 	wget --content-disposition "https://github.com/espressif/ESP8266_NONOS_SDK/archive/v2.1.0.zip"
