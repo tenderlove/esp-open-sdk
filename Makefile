@@ -25,7 +25,7 @@ endif
 PATCH = patch -b -N
 UNZIP = unzip -q -o
 ifeq ($(MACOS),1)
-SED = /usr/local/bin/sed
+SED = /usr/local/opt/gnu-sed/libexec/gnubin/sed
 else
 SED = sed
 endif
